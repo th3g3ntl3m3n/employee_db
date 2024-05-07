@@ -37,19 +37,21 @@ func NewDB() Database {
 
 func (db DB) GetAllEmployee(skip, limit int) ([]Employee, error) {
 
-	if skip > len(*db.Employees) {
-		skip = len(*db.Employees)
+	l := len(*db.Employees)
+	if skip > l {
+		skip = l
 	}
 
 	upper := skip + limit
-	if upper > len(*db.Employees) {
-		upper = len(*db.Employees)
+	if upper > l {
+		upper = l
 	}
 
 	return (*db.Employees)[skip:upper], nil
 }
 
 func (db DB) GetEmployeeByID(employeeID string) (Employee, error) {
+
 	for _, emp := range *db.Employees {
 		if emp.ID == employeeID {
 			return emp, nil
@@ -60,6 +62,7 @@ func (db DB) GetEmployeeByID(employeeID string) (Employee, error) {
 }
 
 func (db DB) UpdateEmployee(employee Employee) (Employee, error) {
+
 	for i := range *db.Employees {
 		emp := (*db.Employees)[i]
 		if emp.ID == employee.ID {
@@ -75,6 +78,7 @@ func (db DB) UpdateEmployee(employee Employee) (Employee, error) {
 	return Employee{}, ErrNotFound
 }
 func (db DB) DeleteEmployee(employeeID string) error {
+
 	for i := 0; i < len(*db.Employees); i++ {
 		if (*db.Employees)[i].ID == employeeID {
 			*db.Employees = append((*db.Employees)[:i], (*db.Employees)[:i]...)
@@ -86,6 +90,7 @@ func (db DB) DeleteEmployee(employeeID string) error {
 	return ErrNotFound
 }
 func (db DB) CreateEmployee(employee Employee) (Employee, error) {
+
 	id := ulid.Make().String()
 	employee.ID = id
 	*db.Employees = append(*db.Employees, employee)

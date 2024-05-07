@@ -24,6 +24,12 @@ func (h Handler) GetAllEmployee(w http.ResponseWriter, r *http.Request) {
 	skipValue := r.URL.Query().Get("skip")
 	limitValue := r.URL.Query().Get("limit")
 
+	if skipValue == "" || limitValue == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprintln(w, "bad request, skip and limit can't be empty")
+		return
+	}
+
 	skip, _ := strconv.Atoi(skipValue)
 	limit, _ := strconv.Atoi(limitValue)
 

@@ -69,6 +69,11 @@ func TestServerCreateEmployee(t *testing.T) {
 	assert.Equal(t, empResp.Name, "Vikas")
 	assert.Equal(t, empResp.Salary, int32(100))
 	assert.Equal(t, empResp.Position, "Dev")
+
+	getReq := httptest.NewRequest("GET", "/employee/"+empResp.ID, nil)
+	rr = httptest.NewRecorder()
+	handler.ServeHTTP(rr, getReq)
+	assert.Equal(t, rr.Code, http.StatusOK)
 }
 func TestServerUpdateEmployee(t *testing.T) {
 	emp := `{"Name": "Vikas", "Salary": 100, "Position": "Dev"}`

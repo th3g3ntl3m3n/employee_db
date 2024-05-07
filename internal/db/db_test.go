@@ -59,7 +59,7 @@ func TestGetAllEmployees(t *testing.T) {
 	for i := range tests {
 		test := tests[i]
 		t.Run(test.name, func(tx *testing.T) {
-			tx.Parallel()
+
 			db := NewMockDB()
 			got, err := db.GetAllEmployee(test.offset, test.limit)
 			assert.NoError(t, err)
@@ -82,7 +82,7 @@ func TestCreateEmployees(t *testing.T) {
 	for i := range tests {
 		test := tests[i]
 		t.Run(test.name, func(tx *testing.T) {
-			tx.Parallel()
+
 			db := NewMockDB()
 			got, err := db.CreateEmployee(test.data)
 			assert.NoError(t, err)
@@ -117,7 +117,7 @@ func TestGetEmployeeByID(t *testing.T) {
 	for i := range tests {
 		test := tests[i]
 		t.Run(test.name, func(tx *testing.T) {
-			tx.Parallel()
+
 			db := NewMockDB()
 			got, err := db.GetEmployeeByID(test.data)
 			assert.Equal(t, err, test.err)
@@ -149,7 +149,7 @@ func TestUpdateEmployee(t *testing.T) {
 	for i := range tests {
 		test := tests[i]
 		t.Run(test.name, func(tx *testing.T) {
-			tx.Parallel()
+
 			db := NewMockDB()
 			_, err := db.UpdateEmployee(test.data)
 			assert.Equal(t, err, test.err)
@@ -186,7 +186,7 @@ func TestDeleteEmployee(t *testing.T) {
 	for i := range tests {
 		test := tests[i]
 		t.Run(test.name, func(tx *testing.T) {
-			tx.Parallel()
+
 			db := NewMockDB()
 			err := db.DeleteEmployee(test.data)
 			assert.Equal(t, err, test.err)
@@ -197,3 +197,10 @@ func TestDeleteEmployee(t *testing.T) {
 		})
 	}
 }
+
+/*
+
+curl -X POST http://localhost:8080/employees -H 'Content-Type: application/json' -d '{"Name": "Test", "Position": "Dev", "Salary": 10000}'
+curl -X GET http://localhost:8080/employees
+
+*/
