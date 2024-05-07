@@ -3,6 +3,7 @@ package cmd
 import (
 	"bytes"
 	"encoding/json"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -26,6 +27,15 @@ func TestServerGetAllEmployee(t *testing.T) {
 
 	assert.Equal(t, len(resp), 0)
 }
+func TestServerGetAllEmployeeBadRequest(t *testing.T) {
+	req := httptest.NewRequest("GET", "/employees", nil)
+	rr := httptest.NewRecorder()
+
+	handler := http.Handler(NewServer().Handler)
+	handler.ServeHTTP(rr, req)
+
+	assert.Equal(t, rr.Code, http.StatusBadRequest)
+}
 
 func TestServerGetEmployeeByID(t *testing.T) {
 	emp := `{"Name": "Vikas", "Salary": 100, "Position": "Dev"}`
@@ -36,7 +46,7 @@ func TestServerGetEmployeeByID(t *testing.T) {
 	handler := http.Handler(NewServer().Handler)
 	handler.ServeHTTP(rr, req)
 
-	assert.Equal(t, rr.Code, http.StatusOK)
+	assert.Equal(t, rr.Code, http.StatusCreated)
 
 	empResp := db.Employee{}
 	json.NewDecoder(rr.Body).Decode(&empResp)
@@ -52,6 +62,29 @@ func TestServerGetEmployeeByID(t *testing.T) {
 
 	assert.Equal(t, empRespGet, empResp)
 }
+
+func TestServerGetEmployeeByIDBadRequest(t *testing.T) {
+	emp := `{"Name": "Vikas", "Salary": 100, "Position": "Dev"}`
+
+	req := httptest.NewRequest("POST", "/employees", strings.NewReader(emp))
+	rr := httptest.NewRecorder()
+
+	handler := http.Handler(NewServer().Handler)
+	handler.ServeHTTP(rr, req)
+
+	assert.Equal(t, rr.Code, http.StatusCreated)
+
+	empResp := db.Employee{}
+	json.NewDecoder(rr.Body).Decode(&empResp)
+
+	getReq := httptest.NewRequest("GET", "/employee/abcd", nil)
+	rr = httptest.NewRecorder()
+	handler.ServeHTTP(rr, getReq)
+
+	assert.Equal(t, rr.Code, http.StatusBadRequest)
+}
+
+// Test for create employee
 func TestServerCreateEmployee(t *testing.T) {
 	emp := `{"Name": "Vikas", "Salary": 100, "Position": "Dev"}`
 
@@ -61,7 +94,7 @@ func TestServerCreateEmployee(t *testing.T) {
 	handler := http.Handler(NewServer().Handler)
 	handler.ServeHTTP(rr, req)
 
-	assert.Equal(t, rr.Code, http.StatusOK)
+	assert.Equal(t, rr.Code, http.StatusCreated)
 
 	empResp := db.Employee{}
 	json.NewDecoder(rr.Body).Decode(&empResp)
@@ -75,6 +108,34 @@ func TestServerCreateEmployee(t *testing.T) {
 	handler.ServeHTTP(rr, getReq)
 	assert.Equal(t, rr.Code, http.StatusOK)
 }
+
+func TestServerCreateEmployeeBadRequest(t *testing.T) {
+	emp := `{"Position": "Dev"}`
+
+	req := httptest.NewRequest("POST", "/employees", strings.NewReader(emp))
+	rr := httptest.NewRecorder()
+
+	handler := http.Handler(NewServer().Handler)
+	handler.ServeHTTP(rr, req)
+
+	assert.Equal(t, rr.Code, http.StatusBadRequest)
+
+}
+
+func TestServerCreateEmployeeBadRequest2(t *testing.T) {
+	emp := `{"Position": 1029}`
+
+	req := httptest.NewRequest("POST", "/employees", strings.NewReader(emp))
+	rr := httptest.NewRecorder()
+
+	handler := http.Handler(NewServer().Handler)
+	handler.ServeHTTP(rr, req)
+
+	assert.Equal(t, rr.Code, http.StatusBadRequest)
+
+}
+
+// Test for update employee
 func TestServerUpdateEmployee(t *testing.T) {
 	emp := `{"Name": "Vikas", "Salary": 100, "Position": "Dev"}`
 
@@ -84,7 +145,7 @@ func TestServerUpdateEmployee(t *testing.T) {
 	handler := http.Handler(NewServer().Handler)
 	handler.ServeHTTP(rr, req)
 
-	assert.Equal(t, rr.Code, http.StatusOK)
+	assert.Equal(t, rr.Code, http.StatusCreated)
 
 	empResp := db.Employee{}
 	json.NewDecoder(rr.Body).Decode(&empResp)
@@ -106,6 +167,82 @@ func TestServerUpdateEmployee(t *testing.T) {
 
 	assert.Equal(t, empRespUpdate, empResp)
 }
+
+func TestServerUpdateEmployeeBadRequest(t *testing.T) {
+	emp := `{"Name": "Vikas", "Salary": 100, "Position": "Dev"}`
+
+	req := httptest.NewRequest("POST", "/employees", strings.NewReader(emp))
+	rr := httptest.NewRecorder()
+
+	handler := http.Handler(NewServer().Handler)
+	handler.ServeHTTP(rr, req)
+
+	assert.Equal(t, rr.Code, http.StatusCreated)
+
+	empResp := db.Employee{}
+	json.NewDecoder(rr.Body).Decode(&empResp)
+
+	empResp.Name = "NewName"
+	empResp.Position = ""
+	empResp.Salary = 0
+
+	jsonBytes, _ := json.Marshal(empResp)
+
+	updateReq := httptest.NewRequest("PATCH", "/employee/"+empResp.ID, bytes.NewBuffer(jsonBytes))
+	rr = httptest.NewRecorder()
+	handler.ServeHTTP(rr, updateReq)
+
+	assert.Equal(t, rr.Code, http.StatusBadRequest)
+}
+
+func TestServerUpdateEmployeeBadRequest2(t *testing.T) {
+	emp := `{"Name": "12345", "Salary": 100, "Position": "Dev"}`
+
+	req := httptest.NewRequest("POST", "/employees", strings.NewReader(emp))
+	rr := httptest.NewRecorder()
+
+	handler := http.Handler(NewServer().Handler)
+	handler.ServeHTTP(rr, req)
+
+	assert.Equal(t, rr.Code, http.StatusCreated)
+
+	empResp := db.Employee{}
+	json.NewDecoder(rr.Body).Decode(&empResp)
+
+	emp = `{"Name": 12345, "Salary": 100, "Position": "Dev"}`
+
+	updateReq := httptest.NewRequest("PATCH", "/employee/"+empResp.ID, strings.NewReader(emp))
+	rr = httptest.NewRecorder()
+	handler.ServeHTTP(rr, updateReq)
+
+	assert.Equal(t, rr.Code, http.StatusBadRequest)
+}
+
+func TestServerUpdateEmployeeBadRequest3(t *testing.T) {
+	emp := `{"Name": "12345", "Salary": 100, "Position": "Dev"}`
+
+	req := httptest.NewRequest("PATCH", "/employee/abcde", strings.NewReader(emp))
+	rr := httptest.NewRecorder()
+
+	handler := http.Handler(NewServer().Handler)
+	handler.ServeHTTP(rr, req)
+
+	assert.Equal(t, rr.Code, http.StatusBadRequest)
+}
+
+func TestServerUpdateEmployeeNotFound(t *testing.T) {
+	emp := `{"Name": "12345", "Salary": 100, "Position": "Dev"}`
+
+	req := httptest.NewRequest("PATCH", "/employees/01HX9YP3J2PB9RMJXVWKPCWTN0", strings.NewReader(emp))
+	rr := httptest.NewRecorder()
+
+	handler := http.Handler(NewServer().Handler)
+	handler.ServeHTTP(rr, req)
+
+	assert.Equal(t, rr.Code, http.StatusNotFound)
+}
+
+// Test for Delete Employee
 func TestServerDeleteEmployee(t *testing.T) {
 	emp := `{"Name": "Vikas", "Salary": 100, "Position": "Dev"}`
 
@@ -115,7 +252,7 @@ func TestServerDeleteEmployee(t *testing.T) {
 	handler := http.Handler(NewServer().Handler)
 	handler.ServeHTTP(rr, req)
 
-	assert.Equal(t, rr.Code, http.StatusOK)
+	assert.Equal(t, rr.Code, http.StatusCreated)
 
 	empResp := db.Employee{}
 	json.NewDecoder(rr.Body).Decode(&empResp)
@@ -136,4 +273,46 @@ func TestServerDeleteEmployee(t *testing.T) {
 	handler.ServeHTTP(rr, getReq)
 
 	assert.Equal(t, rr.Code, http.StatusNotFound)
+}
+
+func TestServerDeleteEmployeeBadRequest(t *testing.T) {
+	emp := `{"Name": "Vikas", "Salary": 100, "Position": "Dev"}`
+
+	req := httptest.NewRequest("POST", "/employees", strings.NewReader(emp))
+	rr := httptest.NewRecorder()
+
+	handler := http.Handler(NewServer().Handler)
+	handler.ServeHTTP(rr, req)
+
+	assert.Equal(t, rr.Code, http.StatusCreated)
+	empResp := db.Employee{}
+	json.NewDecoder(rr.Body).Decode(&empResp)
+	log.Println(empResp.ID)
+
+	deleteReq := httptest.NewRequest("DELETE", "/employee/abcdef", nil)
+	rr = httptest.NewRecorder()
+	handler.ServeHTTP(rr, deleteReq)
+
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
+}
+
+func TestServerDeleteEmployeeNotFound(t *testing.T) {
+	emp := `{"Name": "Vikas", "Salary": 100, "Position": "Dev"}`
+
+	req := httptest.NewRequest("POST", "/employees", strings.NewReader(emp))
+	rr := httptest.NewRecorder()
+
+	handler := http.Handler(NewServer().Handler)
+	handler.ServeHTTP(rr, req)
+
+	assert.Equal(t, rr.Code, http.StatusCreated)
+	empResp := db.Employee{}
+	json.NewDecoder(rr.Body).Decode(&empResp)
+	log.Println(empResp.ID)
+
+	deleteReq := httptest.NewRequest("DELETE", "/employee/01HX9YP3J2PB9RMJXVWKPCWTN0", nil)
+	rr = httptest.NewRecorder()
+	handler.ServeHTTP(rr, deleteReq)
+
+	assert.Equal(t, http.StatusNotFound, rr.Code)
 }

@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/oklog/ulid/v2"
 	"github.com/th3g3ntl3m3n/emplyee_db/internal/db"
 )
 
@@ -39,6 +40,7 @@ func (h Handler) GetAllEmployee(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintln(w, err.Error())
 		return
 	}
+
 	w.WriteHeader(http.StatusOK)
 	w.Header().Add("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(res)
@@ -61,27 +63,17 @@ func (h Handler) CreateEmployee(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	emp, err := h.db.CreateEmployee(req)
-	if errors.Is(err, db.ErrNotFound) {
-		w.WriteHeader(http.StatusNotFound)
-		fmt.Fprintln(w, "employee not found")
-		return
-	}
+	emp, _ := h.db.CreateEmployee(req)
 
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintln(w, err.Error())
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
+	w.WriteHeader(http.StatusCreated)
 	w.Header().Add("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(emp)
 }
 
 func (h Handler) GetEmployeeByID(w http.ResponseWriter, r *http.Request) {
 	employeeID := r.PathValue("id")
-	if employeeID == "" {
+	_, err := ulid.Parse(employeeID)
+	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		fmt.Fprintln(w, "bad request path value id is missing")
 
@@ -92,13 +84,6 @@ func (h Handler) GetEmployeeByID(w http.ResponseWriter, r *http.Request) {
 	if errors.Is(err, db.ErrNotFound) {
 		w.WriteHeader(http.StatusNotFound)
 		fmt.Fprintln(w, "employee not found")
-
-		return
-	}
-
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintln(w, err.Error())
 
 		return
 	}
@@ -118,7 +103,8 @@ func (h Handler) UpdateEmployee(w http.ResponseWriter, r *http.Request) {
 	}
 
 	employeeID := r.PathValue("id")
-	if employeeID == "" {
+	_, err := ulid.Parse(employeeID)
+	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		fmt.Fprintln(w, "bad request path value id is missing")
 
@@ -144,13 +130,6 @@ func (h Handler) UpdateEmployee(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintln(w, err.Error())
-
-		return
-	}
-
 	w.WriteHeader(http.StatusOK)
 	w.Header().Add("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(emp)
@@ -158,24 +137,18 @@ func (h Handler) UpdateEmployee(w http.ResponseWriter, r *http.Request) {
 
 func (h Handler) DeleteEmployee(w http.ResponseWriter, r *http.Request) {
 	employeeID := r.PathValue("id")
-	if employeeID == "" {
+	_, err := ulid.Parse(employeeID)
+	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		fmt.Fprintln(w, "bad request path value id is missing")
 
 		return
 	}
 
-	err := h.db.DeleteEmployee(employeeID)
+	err = h.db.DeleteEmployee(employeeID)
 	if errors.Is(err, db.ErrNotFound) {
 		w.WriteHeader(http.StatusNotFound)
 		fmt.Fprintln(w, "employee not found")
-
-		return
-	}
-
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintln(w, err.Error())
 
 		return
 	}

@@ -90,7 +90,6 @@ func (db DB) DeleteEmployee(employeeID string) error {
 	return ErrNotFound
 }
 func (db DB) CreateEmployee(employee Employee) (Employee, error) {
-
 	id := ulid.Make().String()
 	employee.ID = id
 	*db.Employees = append(*db.Employees, employee)
