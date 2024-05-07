@@ -2,6 +2,7 @@ package db
 
 import (
 	"fmt"
+	"sync"
 
 	"github.com/oklog/ulid/v2"
 )
@@ -27,6 +28,8 @@ type Employee struct {
 	Position string
 }
 
+var mu sync.RWMutex
+
 type DB struct {
 	Employees *[]Employee
 }
@@ -36,7 +39,6 @@ func NewDB() Database {
 }
 
 func (db DB) GetAllEmployee(skip, limit int) ([]Employee, error) {
-
 	l := len(*db.Employees)
 	if skip > l {
 		skip = l
@@ -51,7 +53,6 @@ func (db DB) GetAllEmployee(skip, limit int) ([]Employee, error) {
 }
 
 func (db DB) GetEmployeeByID(employeeID string) (Employee, error) {
-
 	for _, emp := range *db.Employees {
 		if emp.ID == employeeID {
 			return emp, nil
@@ -62,26 +63,26 @@ func (db DB) GetEmployeeByID(employeeID string) (Employee, error) {
 }
 
 func (db DB) UpdateEmployee(employee Employee) (Employee, error) {
+	mu.Lock()
+	defer mu.Unlock()
 
-	for i := range *db.Employees {
-		emp := (*db.Employees)[i]
+	for i, emp := range *db.Employees {
 		if emp.ID == employee.ID {
-			emp.Name = employee.Name
-			emp.Position = employee.Position
-			emp.Salary = employee.Salary
-			(*db.Employees)[i] = emp
+			(*db.Employees)[i] = employee
 
-			return emp, nil
+			return (*db.Employees)[i], nil
 		}
 	}
 
 	return Employee{}, ErrNotFound
 }
 func (db DB) DeleteEmployee(employeeID string) error {
+	mu.Lock()
+	defer mu.Unlock()
 
-	for i := 0; i < len(*db.Employees); i++ {
-		if (*db.Employees)[i].ID == employeeID {
-			*db.Employees = append((*db.Employees)[:i], (*db.Employees)[:i]...)
+	for i, emp := range *db.Employees {
+		if emp.ID == employeeID {
+			*db.Employees = append((*db.Employees)[:i], (*db.Employees)[i+1:]...)
 
 			return nil
 		}
@@ -90,6 +91,9 @@ func (db DB) DeleteEmployee(employeeID string) error {
 	return ErrNotFound
 }
 func (db DB) CreateEmployee(employee Employee) (Employee, error) {
+	mu.Lock()
+	defer mu.Unlock()
+
 	id := ulid.Make().String()
 	employee.ID = id
 	*db.Employees = append(*db.Employees, employee)

@@ -59,7 +59,7 @@ func TestGetAllEmployees(t *testing.T) {
 	for i := range tests {
 		test := tests[i]
 		t.Run(test.name, func(tx *testing.T) {
-
+			tx.Parallel()
 			db := NewMockDB()
 			got, err := db.GetAllEmployee(test.offset, test.limit)
 			assert.NoError(t, err)
@@ -77,12 +77,20 @@ func TestCreateEmployees(t *testing.T) {
 			name: "add new employee",
 			data: Employee{Name: "Vikas", Salary: 1000, Position: "Dev"},
 		},
+		{
+			name: "add new employee 2",
+			data: Employee{Name: "Vikas 2", Salary: 1000, Position: "Dev"},
+		},
+		{
+			name: "add new employee 3",
+			data: Employee{Name: "Vikas 3", Salary: 1000, Position: "Dev"},
+		},
 	}
 
 	for i := range tests {
 		test := tests[i]
 		t.Run(test.name, func(tx *testing.T) {
-
+			tx.Parallel()
 			db := NewMockDB()
 			got, err := db.CreateEmployee(test.data)
 			assert.NoError(t, err)
@@ -117,7 +125,7 @@ func TestGetEmployeeByID(t *testing.T) {
 	for i := range tests {
 		test := tests[i]
 		t.Run(test.name, func(tx *testing.T) {
-
+			tx.Parallel()
 			db := NewMockDB()
 			got, err := db.GetEmployeeByID(test.data)
 			assert.Equal(t, err, test.err)
@@ -149,7 +157,7 @@ func TestUpdateEmployee(t *testing.T) {
 	for i := range tests {
 		test := tests[i]
 		t.Run(test.name, func(tx *testing.T) {
-
+			tx.Parallel()
 			db := NewMockDB()
 			_, err := db.UpdateEmployee(test.data)
 			assert.Equal(t, err, test.err)
@@ -186,13 +194,13 @@ func TestDeleteEmployee(t *testing.T) {
 	for i := range tests {
 		test := tests[i]
 		t.Run(test.name, func(tx *testing.T) {
-
+			tx.Parallel()
 			db := NewMockDB()
 			err := db.DeleteEmployee(test.data)
-			assert.Equal(t, err, test.err)
+			assert.Equal(t, test.err, err)
 			if test.err == nil {
 				_, err = db.GetEmployeeByID(test.data)
-				assert.Equal(t, err, ErrNotFound)
+				assert.Equal(t, ErrNotFound, err)
 			}
 		})
 	}
