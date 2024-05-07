@@ -3,7 +3,7 @@ package db
 import (
 	"testing"
 
-	"github.com/magiconair/properties/assert"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestGetAllEmployees(t *testing.T) {
@@ -57,7 +57,8 @@ func TestGetAllEmployees(t *testing.T) {
 		t.Run(test.name, func(tx *testing.T) {
 			tx.Parallel()
 			db := NewMockDB()
-			got := db.GetAllEmployee(test.offset, test.limit)
+			got, err := db.GetAllEmployee(test.offset, test.limit)
+			assert.NoError(t, err)
 			assert.Equal(tx, len(got), test.expect)
 		})
 	}

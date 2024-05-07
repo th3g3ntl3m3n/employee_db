@@ -3,11 +3,11 @@ package db
 import "github.com/oklog/ulid/v2"
 
 type Database interface {
-	GetAllEmployee(offset, limit int) []Employee
-	GetEmployeeByID(employeeID string) Employee
-	UpdateEmployee(employee Employee) Employee
-	DeleteEmployee(employeeID string) bool
-	CreateEmployee(employee Employee) Employee
+	GetAllEmployee(offset, limit int) ([]Employee, error)
+	GetEmployeeByID(employeeID string) (Employee, error)
+	UpdateEmployee(employee Employee) (Employee, error)
+	DeleteEmployee(employeeID string) error
+	CreateEmployee(employee Employee) (Employee, error)
 }
 
 const DefaultLimit = 5
@@ -27,7 +27,7 @@ func NewDB() Database {
 	return DB{Employees: make([]Employee, 0)}
 }
 
-func (db DB) GetAllEmployee(skip, limit int) []Employee {
+func (db DB) GetAllEmployee(skip, limit int) ([]Employee, error) {
 
 	if skip > len(db.Employees) {
 		skip = len(db.Employees)
@@ -38,21 +38,21 @@ func (db DB) GetAllEmployee(skip, limit int) []Employee {
 		upper = len(db.Employees)
 	}
 
-	return db.Employees[skip:upper]
+	return db.Employees[skip:upper], nil
 }
 
-func (db DB) GetEmployeeByID(employeeID string) Employee {
-	return Employee{}
+func (db DB) GetEmployeeByID(employeeID string) (Employee, error) {
+	return Employee{}, nil
 }
 
-func (db DB) UpdateEmployee(employee Employee) Employee {
-	return Employee{}
+func (db DB) UpdateEmployee(employee Employee) (Employee, error) {
+	return Employee{}, nil
 }
-func (db DB) DeleteEmployee(employeeID string) bool {
-	return true
+func (db DB) DeleteEmployee(employeeID string) error {
+	return nil
 }
-func (db DB) CreateEmployee(employee Employee) Employee {
+func (db DB) CreateEmployee(employee Employee) (Employee, error) {
 	id := ulid.Make().String()
 	employee.ID = id
-	return employee
+	return employee, nil
 }
