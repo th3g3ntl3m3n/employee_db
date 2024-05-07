@@ -13,5 +13,5 @@ var MockData = []Employee{
 }
 
 func NewMockDB() Database {
-	return DB{Employees: MockData}
+	return DB{Employees: &MockData}
 }

@@ -38,9 +38,32 @@ func (h Handler) GetAllEmployee(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h Handler) CreateEmployee(w http.ResponseWriter, r *http.Request) {
+	var req db.Employee
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprintln(w)
+		return
+	}
+
+	// simple validation to check if all fields are set or not
+	// if no then we are returning error
+	// I am assuming all fields must be filled
+	if req.Name == "" || req.Position == "" || req.Salary == 0 {
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprintln(w)
+		return
+	}
+
+	emp, err := h.db.CreateEmployee(req)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintln(w)
+		return
+	}
+
 	w.WriteHeader(http.StatusOK)
 	w.Header().Add("Content-Type", "application/json")
-	fmt.Fprintln(w, `{"employee: {"id": "newDataId"}", "type": "ADDNEW"}`)
+	json.NewEncoder(w).Encode(emp)
 }
 
 func (h Handler) GetEmployeeByID(w http.ResponseWriter, r *http.Request) {

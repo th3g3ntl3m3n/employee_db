@@ -62,3 +62,26 @@ func TestGetAllEmployees(t *testing.T) {
 		})
 	}
 }
+
+func TestCreateEmployees(t *testing.T) {
+	tests := []struct {
+		name string
+		data Employee
+	}{
+		{
+			name: "add new employee",
+			data: Employee{Name: "Vikas", Salary: 1000, Position: "Dev"},
+		},
+	}
+
+	for i := range tests {
+		test := tests[i]
+		t.Run(test.name, func(tx *testing.T) {
+			tx.Parallel()
+			db := NewMockDB()
+			got, err := db.CreateEmployee(test.data)
+			assert.NoError(t, err)
+			assert.NotEmpty(t, got.ID)
+		})
+	}
+}

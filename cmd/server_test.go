@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/magiconair/properties/assert"
+	"github.com/stretchr/testify/assert"
 	"github.com/th3g3ntl3m3n/emplyee_db/internal/db"
 )
 
@@ -37,14 +37,22 @@ func TestServerGetEmployeeByID(t *testing.T) {
 	assert.Equal(t, strings.TrimSpace(rr.Body.String()), `{"employee: {"id": "12HDHD34"}", "type": "GETBYID"}`)
 }
 func TestServerGetCreateEmployee(t *testing.T) {
-	req := httptest.NewRequest("POST", "/employees", nil)
+	emp := `{"Name": "Vikas", "Salary": 100, "Position": "Dev"}`
+
+	req := httptest.NewRequest("POST", "/employees", strings.NewReader(emp))
 	rr := httptest.NewRecorder()
 
 	handler := http.Handler(NewServer().Handler)
 	handler.ServeHTTP(rr, req)
 
 	assert.Equal(t, rr.Code, http.StatusOK)
-	assert.Equal(t, strings.TrimSpace(rr.Body.String()), `{"employee: {"id": "newDataId"}", "type": "ADDNEW"}`)
+
+	empResp := db.Employee{}
+	json.NewDecoder(rr.Body).Decode(&empResp)
+	assert.NotEmpty(t, empResp.ID)
+	assert.Equal(t, empResp.Name, "Vikas")
+	assert.Equal(t, empResp.Salary, int32(100))
+	assert.Equal(t, empResp.Position, "Dev")
 }
 func TestServerUpdateEmployee(t *testing.T) {
 	req := httptest.NewRequest("PATCH", "/employee/123HHD", nil)

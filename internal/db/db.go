@@ -20,25 +20,25 @@ type Employee struct {
 }
 
 type DB struct {
-	Employees []Employee
+	Employees *[]Employee
 }
 
 func NewDB() Database {
-	return DB{Employees: make([]Employee, 0)}
+	return DB{Employees: &[]Employee{}}
 }
 
 func (db DB) GetAllEmployee(skip, limit int) ([]Employee, error) {
 
-	if skip > len(db.Employees) {
-		skip = len(db.Employees)
+	if skip > len(*db.Employees) {
+		skip = len(*db.Employees)
 	}
 
 	upper := skip + limit
-	if upper > len(db.Employees) {
-		upper = len(db.Employees)
+	if upper > len(*db.Employees) {
+		upper = len(*db.Employees)
 	}
 
-	return db.Employees[skip:upper], nil
+	return (*db.Employees)[skip:upper], nil
 }
 
 func (db DB) GetEmployeeByID(employeeID string) (Employee, error) {
@@ -54,5 +54,6 @@ func (db DB) DeleteEmployee(employeeID string) error {
 func (db DB) CreateEmployee(employee Employee) (Employee, error) {
 	id := ulid.Make().String()
 	employee.ID = id
+	*db.Employees = append(*db.Employees, employee)
 	return employee, nil
 }
