@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"bytes"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -27,16 +28,31 @@ func TestServerGetAllEmployee(t *testing.T) {
 }
 
 func TestServerGetEmployeeByID(t *testing.T) {
-	req := httptest.NewRequest("GET", "/employee/12HDHD34", nil)
+	emp := `{"Name": "Vikas", "Salary": 100, "Position": "Dev"}`
+
+	req := httptest.NewRequest("POST", "/employees", strings.NewReader(emp))
 	rr := httptest.NewRecorder()
 
 	handler := http.Handler(NewServer().Handler)
 	handler.ServeHTTP(rr, req)
 
 	assert.Equal(t, rr.Code, http.StatusOK)
-	assert.Equal(t, strings.TrimSpace(rr.Body.String()), `{"employee: {"id": "12HDHD34"}", "type": "GETBYID"}`)
+
+	empResp := db.Employee{}
+	json.NewDecoder(rr.Body).Decode(&empResp)
+
+	getReq := httptest.NewRequest("GET", "/employee/"+empResp.ID, nil)
+	rr = httptest.NewRecorder()
+	handler.ServeHTTP(rr, getReq)
+
+	assert.Equal(t, rr.Code, http.StatusOK)
+
+	empRespGet := db.Employee{}
+	json.NewDecoder(rr.Body).Decode(&empRespGet)
+
+	assert.Equal(t, empRespGet, empResp)
 }
-func TestServerGetCreateEmployee(t *testing.T) {
+func TestServerCreateEmployee(t *testing.T) {
 	emp := `{"Name": "Vikas", "Salary": 100, "Position": "Dev"}`
 
 	req := httptest.NewRequest("POST", "/employees", strings.NewReader(emp))
@@ -55,22 +71,64 @@ func TestServerGetCreateEmployee(t *testing.T) {
 	assert.Equal(t, empResp.Position, "Dev")
 }
 func TestServerUpdateEmployee(t *testing.T) {
-	req := httptest.NewRequest("PATCH", "/employee/123HHD", nil)
+	emp := `{"Name": "Vikas", "Salary": 100, "Position": "Dev"}`
+
+	req := httptest.NewRequest("POST", "/employees", strings.NewReader(emp))
 	rr := httptest.NewRecorder()
 
 	handler := http.Handler(NewServer().Handler)
 	handler.ServeHTTP(rr, req)
 
 	assert.Equal(t, rr.Code, http.StatusOK)
-	assert.Equal(t, strings.TrimSpace(rr.Body.String()), `{"employee: {"id": "123HHD"}", "type": "PATCH"}`)
+
+	empResp := db.Employee{}
+	json.NewDecoder(rr.Body).Decode(&empResp)
+
+	empResp.Name = "NewName"
+	empResp.Position = "EM"
+	empResp.Salary = 10e6
+
+	jsonBytes, _ := json.Marshal(empResp)
+
+	updateReq := httptest.NewRequest("PATCH", "/employee/"+empResp.ID, bytes.NewBuffer(jsonBytes))
+	rr = httptest.NewRecorder()
+	handler.ServeHTTP(rr, updateReq)
+
+	assert.Equal(t, rr.Code, http.StatusOK)
+
+	empRespUpdate := db.Employee{}
+	json.NewDecoder(rr.Body).Decode(&empRespUpdate)
+
+	assert.Equal(t, empRespUpdate, empResp)
 }
 func TestServerDeleteEmployee(t *testing.T) {
-	req := httptest.NewRequest("DELETE", "/employee/123HHD", nil)
+	emp := `{"Name": "Vikas", "Salary": 100, "Position": "Dev"}`
+
+	req := httptest.NewRequest("POST", "/employees", strings.NewReader(emp))
 	rr := httptest.NewRecorder()
 
 	handler := http.Handler(NewServer().Handler)
 	handler.ServeHTTP(rr, req)
 
 	assert.Equal(t, rr.Code, http.StatusOK)
-	assert.Equal(t, strings.TrimSpace(rr.Body.String()), `{"employee: {"id": "123HHD"}", "type": "DELETE"}`)
+
+	empResp := db.Employee{}
+	json.NewDecoder(rr.Body).Decode(&empResp)
+
+	deleteReq := httptest.NewRequest("DELETE", "/employee/"+empResp.ID, nil)
+	rr = httptest.NewRecorder()
+	handler.ServeHTTP(rr, deleteReq)
+
+	assert.Equal(t, rr.Code, http.StatusOK)
+
+	empRespDelete := db.Employee{}
+	json.NewDecoder(rr.Body).Decode(&empRespDelete)
+
+	assert.Equal(t, empRespDelete.ID, empResp.ID)
+
+	getReq := httptest.NewRequest("GET", "/employee/"+empResp.ID, nil)
+	rr = httptest.NewRecorder()
+	handler.ServeHTTP(rr, getReq)
+
+	assert.Equal(t, rr.Code, http.StatusNotFound)
 }

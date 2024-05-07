@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -50,14 +51,20 @@ func (h Handler) CreateEmployee(w http.ResponseWriter, r *http.Request) {
 	// I am assuming all fields must be filled
 	if req.Name == "" || req.Position == "" || req.Salary == 0 {
 		w.WriteHeader(http.StatusBadRequest)
-		fmt.Fprintln(w)
+		fmt.Fprintln(w, "bad request")
 		return
 	}
 
 	emp, err := h.db.CreateEmployee(req)
+	if errors.Is(err, db.ErrNotFound) {
+		w.WriteHeader(http.StatusNotFound)
+		fmt.Fprintln(w, "employee not found")
+		return
+	}
+
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintln(w)
+		fmt.Fprintln(w, err.Error())
 		return
 	}
 
@@ -67,22 +74,105 @@ func (h Handler) CreateEmployee(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h Handler) GetEmployeeByID(w http.ResponseWriter, r *http.Request) {
+	employeeID := r.PathValue("id")
+	if employeeID == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprintln(w, "bad request path value id is missing")
+
+		return
+	}
+
+	emp, err := h.db.GetEmployeeByID(employeeID)
+	if errors.Is(err, db.ErrNotFound) {
+		w.WriteHeader(http.StatusNotFound)
+		fmt.Fprintln(w, "employee not found")
+
+		return
+	}
+
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintln(w, err.Error())
+
+		return
+	}
+
 	w.WriteHeader(http.StatusOK)
 	w.Header().Add("Content-Type", "application/json")
-	pathValue := r.PathValue("id")
-	fmt.Fprintf(w, `{"employee: {"id": "%s"}", "type": "GETBYID"}`, pathValue)
+	json.NewEncoder(w).Encode(emp)
 }
 
 func (h Handler) UpdateEmployee(w http.ResponseWriter, r *http.Request) {
+	var req db.Employee
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprintln(w)
+
+		return
+	}
+
+	employeeID := r.PathValue("id")
+	if employeeID == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprintln(w, "bad request path value id is missing")
+
+		return
+	}
+
+	// simple validation to check if all fields are set or not
+	// if no then we are returning error
+	// I am assuming all fields must be filled
+	if req.Name == "" || req.Position == "" || req.Salary == 0 {
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprintln(w, "bad request, you can't set empty values")
+
+		return
+	}
+
+	req.ID = employeeID
+	emp, err := h.db.UpdateEmployee(req)
+	if errors.Is(err, db.ErrNotFound) {
+		w.WriteHeader(http.StatusNotFound)
+		fmt.Fprintln(w, "employee not found")
+
+		return
+	}
+
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintln(w, err.Error())
+
+		return
+	}
+
 	w.WriteHeader(http.StatusOK)
 	w.Header().Add("Content-Type", "application/json")
-	pathValue := r.PathValue("id")
-	fmt.Fprintf(w, `{"employee: {"id": "%s"}", "type": "PATCH"}`, pathValue)
+	json.NewEncoder(w).Encode(emp)
 }
 
 func (h Handler) DeleteEmployee(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusOK)
-	w.Header().Add("Content-Type", "application/json")
-	pathValue := r.PathValue("id")
-	fmt.Fprintf(w, `{"employee: {"id": "%s"}", "type": "DELETE"}`, pathValue)
+	employeeID := r.PathValue("id")
+	if employeeID == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprintln(w, "bad request path value id is missing")
+
+		return
+	}
+
+	err := h.db.DeleteEmployee(employeeID)
+	if errors.Is(err, db.ErrNotFound) {
+		w.WriteHeader(http.StatusNotFound)
+		fmt.Fprintln(w, "employee not found")
+
+		return
+	}
+
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintln(w, err.Error())
+
+		return
+	}
+
+	fmt.Fprintf(w, `{"ID": "%s"}`, employeeID)
 }
