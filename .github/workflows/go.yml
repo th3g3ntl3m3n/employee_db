@@ -20,11 +20,11 @@ jobs:
         with:
           go-version: "1.22.2"
 
-      - name: go-test-coverage
-        uses: vladopajic/go-test-coverage@v2.10.1
-
       - name: Test
         run: go test -race -v ./... -coverprofile=./cover.out -covermode=atomic -coverpkg=./...
+
+      - name: go-test-coverage
+        uses: vladopajic/go-test-coverage@v2.10.1
         with:
           # Configure action using config file (option 1)
           config: ./.testcoverage.yml
