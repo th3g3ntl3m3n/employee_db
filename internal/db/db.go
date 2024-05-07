@@ -1,6 +1,10 @@
 package db
 
-import "github.com/oklog/ulid/v2"
+import (
+	"fmt"
+
+	"github.com/oklog/ulid/v2"
+)
 
 type Database interface {
 	GetAllEmployee(offset, limit int) ([]Employee, error)
@@ -11,6 +15,10 @@ type Database interface {
 }
 
 const DefaultLimit = 5
+
+var (
+	ErrNotFound = fmt.Errorf("employee not found")
+)
 
 type Employee struct {
 	ID       string
@@ -42,18 +50,45 @@ func (db DB) GetAllEmployee(skip, limit int) ([]Employee, error) {
 }
 
 func (db DB) GetEmployeeByID(employeeID string) (Employee, error) {
-	return Employee{}, nil
+	for _, emp := range *db.Employees {
+		if emp.ID == employeeID {
+			return emp, nil
+		}
+	}
+
+	return Employee{}, ErrNotFound
 }
 
 func (db DB) UpdateEmployee(employee Employee) (Employee, error) {
-	return Employee{}, nil
+	for i := range *db.Employees {
+		emp := (*db.Employees)[i]
+		if emp.ID == employee.ID {
+			emp.Name = employee.Name
+			emp.Position = employee.Position
+			emp.Salary = employee.Salary
+			(*db.Employees)[i] = emp
+
+			return emp, nil
+		}
+	}
+
+	return Employee{}, ErrNotFound
 }
 func (db DB) DeleteEmployee(employeeID string) error {
-	return nil
+	for i := 0; i < len(*db.Employees); i++ {
+		if (*db.Employees)[i].ID == employeeID {
+			*db.Employees = append((*db.Employees)[:i], (*db.Employees)[:i]...)
+
+			return nil
+		}
+	}
+
+	return ErrNotFound
 }
 func (db DB) CreateEmployee(employee Employee) (Employee, error) {
 	id := ulid.Make().String()
 	employee.ID = id
 	*db.Employees = append(*db.Employees, employee)
+
 	return employee, nil
 }

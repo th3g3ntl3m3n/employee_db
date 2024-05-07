@@ -6,6 +6,11 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestNewDB(t *testing.T) {
+	db := NewDB()
+	assert.NotNil(t, db)
+}
+
 func TestGetAllEmployees(t *testing.T) {
 	tests := []struct {
 		name   string
@@ -82,6 +87,113 @@ func TestCreateEmployees(t *testing.T) {
 			got, err := db.CreateEmployee(test.data)
 			assert.NoError(t, err)
 			assert.NotEmpty(t, got.ID)
+		})
+	}
+}
+
+func TestGetEmployeeByID(t *testing.T) {
+	tests := []struct {
+		name string
+		data string
+		err  error
+	}{
+		{
+			name: "get employee with id abx",
+			data: "abx",
+			err:  nil,
+		},
+		{
+			name: "get employee with id abz",
+			data: "abz",
+			err:  nil,
+		},
+		{
+			name: "get employee with id ab1",
+			data: "ab1",
+			err:  ErrNotFound,
+		},
+	}
+
+	for i := range tests {
+		test := tests[i]
+		t.Run(test.name, func(tx *testing.T) {
+			tx.Parallel()
+			db := NewMockDB()
+			got, err := db.GetEmployeeByID(test.data)
+			assert.Equal(t, err, test.err)
+			if test.err == nil {
+				assert.Equal(t, got.ID, test.data)
+			}
+		})
+	}
+}
+
+func TestUpdateEmployee(t *testing.T) {
+	tests := []struct {
+		name string
+		data Employee
+		err  error
+	}{
+		{
+			name: "update employee with id abx",
+			data: Employee{ID: "abx", Name: "NEWNAME", Salary: 10000, Position: "Something"},
+			err:  nil,
+		},
+		{
+			name: "update employee with id non-existent",
+			data: Employee{ID: "ab1", Name: "Sim", Salary: 100, Position: "Something"},
+			err:  ErrNotFound,
+		},
+	}
+
+	for i := range tests {
+		test := tests[i]
+		t.Run(test.name, func(tx *testing.T) {
+			tx.Parallel()
+			db := NewMockDB()
+			_, err := db.UpdateEmployee(test.data)
+			assert.Equal(t, err, test.err)
+			if test.err == nil {
+				got, err := db.GetEmployeeByID(test.data.ID)
+				assert.Nil(t, err)
+				assert.Equal(t, got.ID, test.data.ID)
+				assert.Equal(t, got.Name, test.data.Name)
+				assert.Equal(t, got.Salary, test.data.Salary)
+				assert.Equal(t, got.Position, test.data.Position)
+			}
+		})
+	}
+}
+
+func TestDeleteEmployee(t *testing.T) {
+	tests := []struct {
+		name string
+		data string
+		err  error
+	}{
+		{
+			name: "delete employee with id abx",
+			data: "abx",
+			err:  nil,
+		},
+		{
+			name: "delete employee with id non-existent",
+			data: "ab1",
+			err:  ErrNotFound,
+		},
+	}
+
+	for i := range tests {
+		test := tests[i]
+		t.Run(test.name, func(tx *testing.T) {
+			tx.Parallel()
+			db := NewMockDB()
+			err := db.DeleteEmployee(test.data)
+			assert.Equal(t, err, test.err)
+			if test.err == nil {
+				_, err = db.GetEmployeeByID(test.data)
+				assert.Equal(t, err, ErrNotFound)
+			}
 		})
 	}
 }
