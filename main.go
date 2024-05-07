@@ -1,7 +1,11 @@
 package main
 
-import "fmt"
+import (
+	"github.com/th3g3ntl3m3n/emplyee_db/cmd"
+)
 
 func main() {
-    fmt.Println("Hello World!")
+	if err := cmd.NewServer().ListenAndServe(); err != nil {
+		panic("can't start server")
+	}
 }
