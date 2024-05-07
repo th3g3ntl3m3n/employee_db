@@ -1,23 +1,29 @@
 package cmd
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 
 	"github.com/magiconair/properties/assert"
+	"github.com/th3g3ntl3m3n/emplyee_db/internal/db"
 )
 
 func TestServerGetAllEmployee(t *testing.T) {
-	req := httptest.NewRequest("GET", "/employees", nil)
+	req := httptest.NewRequest("GET", "/employees?skip=0&limit=5", nil)
 	rr := httptest.NewRecorder()
 
 	handler := http.Handler(NewServer().Handler)
 	handler.ServeHTTP(rr, req)
 
 	assert.Equal(t, rr.Code, http.StatusOK)
-	assert.Equal(t, strings.TrimSpace(rr.Body.String()), `{"employees: []", "type": "GETALL"}`)
+
+	resp := []db.Employee{}
+	json.NewDecoder(rr.Body).Decode(&resp)
+
+	assert.Equal(t, len(resp), 0)
 }
 
 func TestServerGetEmployeeByID(t *testing.T) {

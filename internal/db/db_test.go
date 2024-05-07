@@ -7,7 +7,6 @@ import (
 )
 
 func TestGetAllEmployees(t *testing.T) {
-
 	tests := []struct {
 		name   string
 		offset int
